@@ -166,6 +166,41 @@ muller(PyObject *self, PyObject *args)  //метод Мюллера(парабо
 	return Py_BuildValue("db", x1, steps);
 }
 
+
+static PyObject *
+halley(PyObject *self, PyObject *args)
+{
+    PyObject *cb1, *cb2, *cb3;
+	double eps, xn, x1, x0;
+	double res1, res2, res3;
+    int steps = 1;
+    if (!PyArg_ParseTuple(args, "OOOdd", &cb1, &cb2, &cb3, &xn, &eps))
+        return 0;
+
+    if (!PyCallable_Check(cb1) || !PyCallable_Check(cb2) || !PyCallable_Check(cb3)) {
+        PyErr_SetString(PyExc_TypeError, "helley: a callable is required");
+        return 0;
+    }
+
+	PyObject *arg = Py_BuildValue("(d)", xn);
+	res1 = PyFloat_AsDouble(PyObject_CallObject(cb1, arg));
+	res2 = PyFloat_AsDouble(PyObject_CallObject(cb2, arg));
+	res3 = PyFloat_AsDouble(PyObject_CallObject(cb3, arg));
+	x1  = xn - (2*res1*res2/(2*pow(res2,2)-res1*res3));
+	x0 = xn;
+	while(fabs(x0-x1)>eps) {
+		x0 = x1;
+		arg = Py_BuildValue("(d)", x1);
+		res1 = PyFloat_AsDouble(PyObject_CallObject(cb1, arg));
+		res2 = PyFloat_AsDouble(PyObject_CallObject(cb2, arg));
+		res3 = PyFloat_AsDouble(PyObject_CallObject(cb3, arg));
+		x1  = x0 - ((2*res1*res2)/(2*pow(res2,2)-res1*res3));
+		steps++;
+	}
+	return Py_BuildValue("db", x1, steps);
+}
+
+
 static PyMethodDef ownmod_methods[] = {
     {
         "bisection",
@@ -185,12 +220,17 @@ static PyMethodDef ownmod_methods[] = {
         METH_VARARGS,
         "newton function"
     },
-
     {
         "muller",
         muller,
         METH_VARARGS,
         "muller function"
+    },
+    {
+        "halley",
+        halley,
+        METH_VARARGS,
+        "halley function"
     },
     { NULL, NULL, 0, NULL }
 };
