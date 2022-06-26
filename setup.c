@@ -8,7 +8,7 @@ bisection(PyObject *self, PyObject *args)   //метод бисекции, ди�
     PyObject *cb1;
 	double eps, x_n, x_k, tmp, x_i;
 	double res1, res2;
-	int steps=0;
+	int steps = 1;
 
     if (!PyArg_ParseTuple(args, "Oddd", &cb1, &x_n, &x_k, &eps))
         return 0;
@@ -52,7 +52,7 @@ chord(PyObject *self, PyObject *args)   //метод хорд, секущих
     PyObject *cb1;
 	double eps, x_next, x_curr;
 	double res1, res2;
-	int steps=0;
+	int steps = 1;
 
     if (!PyArg_ParseTuple(args, "Oddd", &cb1, &x_curr, &x_next, &eps))
         return 0;
@@ -86,7 +86,7 @@ newton(PyObject *self, PyObject *args)  //метод Ньютона
     PyObject *cb1, *cb2;
 	double eps, xn, x1, x0;
 	double res1, res2;
-	int steps=0;
+	int steps = 1;
 
     if (!PyArg_ParseTuple(args, "OOdd", &cb1, &cb2, &xn, &eps))
         return 0;
@@ -113,6 +113,59 @@ newton(PyObject *self, PyObject *args)  //метод Ньютона
 }
 
 
+
+static PyObject *
+muller(PyObject *self, PyObject *args)  //метод Мюллера(парабол)
+{
+    PyObject *cb1;
+	double eps, xnm0, xnm1, xnm2, x1,w;
+	double res0, res1, res2;
+    int steps = 1;
+    if (!PyArg_ParseTuple(args, "Odddd", &cb1, &xnm0, &xnm1, &xnm2, &eps))
+        return 0;
+
+    if (!PyCallable_Check(cb1)) {
+        PyErr_SetString(PyExc_TypeError, "muller: a callable is required");
+        return 0;
+    }
+
+	PyObject *arg = Py_BuildValue("(d)", xnm0);
+	res0 = PyFloat_AsDouble(PyObject_CallObject(cb1, arg));
+	PyObject *arg1 = Py_BuildValue("(d)", xnm1);
+	res1 = PyFloat_AsDouble(PyObject_CallObject(cb1, arg1));
+	PyObject *arg2 = Py_BuildValue("(d)", xnm2);
+	res2 = PyFloat_AsDouble(PyObject_CallObject(cb1, arg2));
+	w = ((res2-res1)/(xnm2-xnm1))+((res2-res0)/(xnm2-xnm0))-((res1-res0)/(xnm1-xnm0));
+	if (fabs(w+sqrt(pow(w,2)-4*res2*(((res2-res1)/(xnm2-xnm1))-((res1-res0)/(xnm1-xnm0)))/(xnm2-xnm0))) > fabs(w-sqrt(pow(w,2)-4*res2*(((res2-res1)/(xnm2-xnm1))-((res1-res0)/(xnm1-xnm0)))/(xnm2-xnm0))))
+	{
+	x1  = xnm2-((2*res2)/(w+sqrt(pow(w,2)-4*res2*(((res2-res1)/(xnm2-xnm1))-((res1-res0)/(xnm1-xnm0)))/(xnm2-xnm0))));
+	}
+	else {
+	x1  = xnm2-((2*res2)/(w-sqrt(pow(w,2)-4*res2*(((res2-res1)/(xnm2-xnm1))-((res1-res0)/(xnm1-xnm0)))/(xnm2-xnm0))));
+	}
+	while(fabs(xnm0-x1)>eps) {
+	xnm0 = xnm1;
+	xnm1=xnm2;
+	xnm2=x1;
+	PyObject *arg = Py_BuildValue("(d)", xnm0);
+	res0 = PyFloat_AsDouble(PyObject_CallObject(cb1, arg));
+	PyObject *arg1 = Py_BuildValue("(d)", xnm1);
+	res1 = PyFloat_AsDouble(PyObject_CallObject(cb1, arg1));
+	PyObject *arg2 = Py_BuildValue("(d)", xnm2);
+	res2 = PyFloat_AsDouble(PyObject_CallObject(cb1, arg2));
+	w = ((res2-res1)/(xnm2-xnm1))+((res2-res0)/(xnm2-xnm0))-((res1-res0)/(xnm1-xnm0));
+	if (fabs(w+sqrt(pow(w,2)-4*res2*(((res2-res1)/(xnm2-xnm1))-((res1-res0)/(xnm1-xnm0)))/(xnm2-xnm0))) > fabs(w-sqrt(pow(w,2)-4*res2*(((res2-res1)/(xnm2-xnm1))-((res1-res0)/(xnm1-xnm0)))/(xnm2-xnm0))))
+	{
+	x1  = xnm2-((2*res2)/(w+sqrt(pow(w,2)-4*res2*(((res2-res1)/(xnm2-xnm1))-((res1-res0)/(xnm1-xnm0)))/(xnm2-xnm0))));
+	}
+	else {
+	x1  = xnm2-((2*res2)/(w-sqrt(pow(w,2)-4*res2*(((res2-res1)/(xnm2-xnm1))-((res1-res0)/(xnm1-xnm0)))/(xnm2-xnm0))));
+	}
+	steps++;
+	}
+	return Py_BuildValue("db", x1, steps);
+}
+
 static PyMethodDef ownmod_methods[] = {
     {
         "bisection",
@@ -131,6 +184,13 @@ static PyMethodDef ownmod_methods[] = {
         newton,
         METH_VARARGS,
         "newton function"
+    },
+
+    {
+        "muller",
+        muller,
+        METH_VARARGS,
+        "muller function"
     },
     { NULL, NULL, 0, NULL }
 };
