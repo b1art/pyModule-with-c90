@@ -168,7 +168,7 @@ muller(PyObject *self, PyObject *args)  //метод Мюллера(парабо
 
 
 static PyObject *
-halley(PyObject *self, PyObject *args)
+halley(PyObject *self, PyObject *args)  //метод Галлея
 {
     PyObject *cb1, *cb2, *cb3;
 	double eps, xn, x1, x0;
